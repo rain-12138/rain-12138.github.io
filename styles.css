@@ -1,0 +1,31 @@
+/* CSS 代码 */
+
+body {
+  font-family: sans-serif;
+  margin: 0;
+}
+
+header {
+  background-color: #333;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+}
+
+main {
+  padding: 20px;
+}
+
+.blog-post {
+  border: 1px solid #ddd;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.blog-post h2 {
+  margin-top: 0;
+}
