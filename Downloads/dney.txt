@@ -2,7 +2,7 @@
 ! Title: dney 百度
 !
 ||baidu.com^
-||n-devs-sgw.tplinkcloud.com.cn^
+||tplinkcloud.com.cn^
 @@||ad.10010.com^
 @@||captcha.su.baidu.com^
 @@||buyad.bi-xenon.cn^
