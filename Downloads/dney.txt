@@ -1,19 +1,5 @@
 !
-! Title: dney 百度
+! Title: dney 自定义
 !
 ||baidu.com^
 ||tplinkcloud.com.cn^
-@@||ad.10010.com^
-@@||captcha.su.baidu.com^
-@@||buyad.bi-xenon.cn^
-@@||netatmo.commander1.com^
-@@||5471782.fls.doubleclick.net^
-@@||pagead.l.doubleclick.net^
-@@||wan.douyu.com^
-@@||www.googleadservices.com^
-@@||advert.kf5.com^
-@@||log.mmstat.com^
-@@||sax.sina.com.cn^
-@@||sobot.com^
-@@||click.simba.taobao.com^
-@@||app-advertise.zhihuishu.com^
