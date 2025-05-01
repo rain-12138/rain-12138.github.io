@@ -11,3 +11,6 @@
 ||time.windows.com^
 ||2.android.pool.ntp.org^
 ||pool.ntp.org^
+!
+! end time 1 5 2025
+!
