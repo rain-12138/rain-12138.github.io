@@ -12,3 +12,4 @@
 ||2.android.pool.ntp.org^
 ||pool.ntp.org^
 ||time.pool.aliyun.com^
+||time.apple.com^
