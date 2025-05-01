@@ -11,3 +11,4 @@
 ||time.windows.com^
 ||2.android.pool.ntp.org^
 ||pool.ntp.org^
+||time.pool.aliyun.com^
