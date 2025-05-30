@@ -3,13 +3,3 @@
 !
 ||baidu.com^
 ||tplinkcloud.com.cn^
-||ntp.ubuntu.com^
-||s1a.time.edu.cn^
-||cn.ntp.org.cn^
-||clock.isc.org^
-||time.nist.gov^
-||time.windows.com^
-||2.android.pool.ntp.org^
-||pool.ntp.org^
-||time.pool.aliyun.com^
-||time.apple.com^
