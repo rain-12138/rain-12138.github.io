@@ -4,99 +4,120 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
-# 1. 基础配置
-st.set_page_config(page_title="基金实时估值助手", layout="wide", page_icon="📈")
+# 1. 页面基础配置
+st.set_page_config(page_title="基金监控看板", layout="wide", page_icon="📊")
 
-# 自定义 CSS 让表格和卡片更好看
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .main { background-color: #f8f9fa; }
+    div[data-testid="metric-container"] {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        padding: 15px;
+        border-radius: 10px;
+    }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# 2. 标题和侧边栏
-st.title("🚀 基金实时估值监控看板")
-st.sidebar.header("配置参数")
-refresh_btn = st.sidebar.button("立即刷新数据")
-
-# 3. 数据获取函数 (增加缓存防止频繁请求被封)
-@st.cache_data(ttl=60)  # 缓存1分钟
-def fetch_data():
+# 2. 数据获取逻辑
+@st.cache_data(ttl=300) # 缓存5分钟，避免频繁请求被封
+def get_safe_data():
     try:
-        df = ak.fund_value_estimate_em()
-        # 转换数值型字段
-        df['实时估值'] = pd.to_numeric(df['实时估值'], errors='coerce')
-        df['估算涨跌幅'] = pd.to_numeric(df['估算涨跌幅'], errors='coerce')
-        df['单位净值'] = pd.to_numeric(df['单位净值'], errors='coerce')
-        return df
+        # 获取东方财富-开放式基金实时行情
+        df = ak.fund_open_fund_daily_em()
+        
+        # 统一字段名映射（适配不同版本的 AKShare）
+        column_map = {
+            '基金代码': 'code',
+            '基金简称': 'name',
+            '单位净值': 'nav',
+            '日增长率': 'change',
+            '更新日期': 'date'
+        }
+        df = df.rename(columns=column_map)
+        
+        # 清洗数据：转为数值型，处理百分号
+        df['change'] = pd.to_numeric(df['change'], errors='coerce')
+        df['nav'] = pd.to_numeric(df['nav'], errors='coerce')
+        
+        # 只保留必要的列
+        return df[['code', 'name', 'nav', 'change', 'date']]
     except Exception as e:
-        st.error(f"获取数据失败: {e}")
+        st.error(f"数据抓取失败: {e}")
         return None
 
-# 4. 执行获取数据
-with st.spinner('正在同步天天基金实时数据...'):
-    all_data = fetch_data()
+# 3. 侧边栏交互
+st.sidebar.header("📊 监控配置")
+with st.sidebar:
+    st.write("数据源：东方财富 (天天基金)")
+    refresh = st.button("🔄 手动刷新数据")
+    if refresh:
+        st.cache_data.clear()
+
+# 4. 主页面逻辑
+all_data = get_safe_data()
 
 if all_data is not None:
-    # 侧边栏：自选基金功能
-    fund_list = all_data['基金代码'].tolist()
-    default_list = ["005827", "161725", "011043", "001594"] # 预设几个热门基金
+    st.title("📈 基金实时行情监控")
+    
+    # 自选基金设置 (预设了一些常见基金)
+    default_selection = ["005827", "161725", "011043", "001594"]
+    available_codes = all_data['code'].tolist()
     
     selected_codes = st.sidebar.multiselect(
-        "搜索并选择你的自选基金:",
-        options=fund_list,
-        default=[code for code in default_list if code in fund_list]
+        "选择或输入基金代码:",
+        options=available_codes,
+        default=[c for c in default_selection if c in available_codes]
     )
 
-    # 5. 核心逻辑：数据展示
     if selected_codes:
-        my_funds = all_data[all_data['基金代码'].isin(selected_codes)].copy()
+        # 过滤出自选基金
+        subset = all_data[all_data['code'].isin(selected_codes)].copy()
         
-        # --- 第一部分：指标卡片 ---
-        st.subheader("📌 自选基金盘中表现")
-        cols = st.columns(len(my_funds))
-        for i, row in enumerate(my_funds.itertuples()):
-            color = "normal" if row.估算涨跌幅 >= 0 else "inverse"
+        # --- 顶部卡片展示 ---
+        cols = st.columns(len(subset))
+        for i, row in enumerate(subset.itertuples()):
             cols[i].metric(
-                label=row.基金名称,
-                value=f"{row.实时估值:.4f}",
-                delta=f"{row.估算涨跌幅}%"
+                label=row.name,
+                value=f"¥{row.nav:.4f}",
+                delta=f"{row.change}%"
             )
 
-        # --- 第二部分：可视化图表 ---
+        # --- 图表展示 ---
         st.divider()
-        col_left, col_right = st.columns([1, 1])
-
-        with col_left:
-            st.write("📊 **涨跌幅对比图**")
+        c1, c2 = st.columns([2, 1])
+        
+        with c1:
+            st.subheader("涨跌幅对比")
+            # 绘图：红涨绿跌
             fig = px.bar(
-                my_funds, 
-                x='基金名称', 
-                y='估算涨跌幅',
-                color='估算涨跌幅',
-                color_continuous_scale='RdBu_r',
-                range_color=[-3, 3]
+                subset, 
+                x='name', 
+                y='change',
+                color='change',
+                color_continuous_scale=['#00ad11', '#eeeeee', '#ff0000'], # 绿-白-红
+                range_color=[-3, 3],
+                labels={'change': '涨跌幅 (%)', 'name': '基金名称'}
             )
             st.plotly_chart(fig, use_container_width=True)
 
-        with col_right:
-            st.write("📋 **详细行情明细**")
+        with c2:
+            st.subheader("详情明细")
             st.dataframe(
-                my_funds[['基金代码', '基金名称', '实时估值', '估算涨跌幅', '估值时间']],
+                subset[['code', 'name', 'nav', 'change']],
                 hide_index=True,
                 use_container_width=True
             )
-
-        # --- 第三部分：全市场概览 (可选展示) ---
-        with st.expander("🔍 查看全市场基金估值 Top 10 (按涨幅)"):
-            top_10 = all_data.sort_values('估算涨跌幅', ascending=False).head(10)
-            st.table(top_10[['基金代码', '基金名称', '估算涨跌幅', '实时估值']])
-
+            
+        # --- 市场行情排行 ---
+        st.divider()
+        with st.expander("🔥 查看今日市场涨幅榜 Top 10"):
+            top_10 = all_data.sort_values('change', ascending=False).head(10)
+            st.table(top_10[['code', 'name', 'nav', 'change']])
+            
     else:
-        st.warning("请在左侧边栏搜索并选择基金代码以进行监控。")
+        st.info("💡 请在左侧侧边栏选择您想要监控的基金。")
 
-    # 页脚
-    st.caption(f"数据更新于: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (每分钟自动同步一次)")
+    st.caption(f"注：数据来自公开网络接口，最后同步时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 else:
-    st.error("无法加载基金数据，请检查网络或稍后再试。")
+    st.warning("⚠️ 无法获取行情数据，可能是由于接口暂时受到限制，请稍后再试。")
